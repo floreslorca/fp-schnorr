@@ -24,6 +24,7 @@ licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 libraryDependencies ++= Seq(
   "org.typelevel"    %% "cats-core"     % "1.0.1",
   "org.typelevel"    %% "cats-effect"   % "1.0.0-RC2",
+  "org.scodec"       %% "scodec-core"   % "1.10.3",
   "org.typelevel"    %% "spire"         % "0.14.1",
   "io.github.jmcardon" %% "tsec-signatures" % "0.0.1-M11",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.60"
