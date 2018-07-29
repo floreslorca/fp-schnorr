@@ -2,7 +2,6 @@ package fp.schnorr
 
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.spec.ECNamedCurveSpec
-import org.bouncycastle.math.ec.custom.sec.SecP256K1FieldElement
 
 trait ECCurve[A] {
   protected val cName: String
@@ -20,5 +19,4 @@ trait ECCurve[A] {
     )
   }
 
-  val e = new SecP256K1FieldElement
 }
