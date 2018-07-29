@@ -5,6 +5,9 @@ import java.security.{MessageDigest, Security}
 import cats.effect.Sync
 import cats.syntax.all._
 
+import fp.schnorr.sig.{Signer, ECCurve}
+import fp.schnorr.sig.{Signature, Point}
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.math.ec.ECPoint
 
@@ -16,7 +19,7 @@ import scodec.bits._
 import spire.math._
 import spire.implicits._
 
-class SchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
+class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
   extends Signer[F,A] {
 
   object algebra {
@@ -61,7 +64,6 @@ class SchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
     def encodeBigInt(b: BigInt): F[ByteVector] = F.delay(bigInt.encode(b).require.toByteVector)
 
   }
-
 
   private def toPoint(ec: ECPoint): F[Point] = F.delay(Point(ec.getYCoord.toBigInteger, ec.getXCoord.toBigInteger))
 

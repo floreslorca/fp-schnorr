@@ -1,4 +1,4 @@
-package fp.schnorr
+package fp.schnorr.sig
 
 abstract class Sig[A](curveName: String, outLen: Int)
   extends ECCurve[A]

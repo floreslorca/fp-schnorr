@@ -1,6 +1,7 @@
 package fp.schnorr
 
 import cats.effect.Sync
+import fp.schnorr.sig.{ECCurve, Sig}
 
 sealed trait BIPSchnorr
 
@@ -10,7 +11,7 @@ object BIPSchnorr extends Sig[BIPSchnorr]("secp256k1", 64) {
 
   implicit val ecCurve: ECCurve[BIPSchnorr] = this
 
-  implicit def signerSync[F[_]: Sync] = new SchnorrSigner[F, BIPSchnorr]
+  implicit def signerSync[F[_]: Sync] = new BIPSchnorrSigner[F, BIPSchnorr]
 
 }
 

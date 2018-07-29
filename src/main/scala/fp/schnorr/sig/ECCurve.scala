@@ -1,4 +1,4 @@
-package fp.schnorr
+package fp.schnorr.sig
 
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.spec.ECNamedCurveSpec

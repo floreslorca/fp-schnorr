@@ -1,4 +1,4 @@
-package fp.schnorr
+package fp.schnorr.sig
 
 import scodec.bits.ByteVector
 

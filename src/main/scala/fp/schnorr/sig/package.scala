@@ -1,8 +1,8 @@
-package fp
+package fp.schnorr
 
 import scodec.bits.ByteVector
 
-package object schnorr {
+package object sig {
 
   case class Point(y: BigInt, x: BigInt)
 
