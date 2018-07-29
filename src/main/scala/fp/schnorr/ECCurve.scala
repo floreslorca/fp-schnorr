@@ -1,17 +1,24 @@
 package fp.schnorr
 
-import org.bouncycastle.asn1.sec.SECNamedCurves
-import org.bouncycastle.crypto.params.ECDomainParameters
+import org.bouncycastle.jce.ECNamedCurveTable
+import org.bouncycastle.jce.spec.ECNamedCurveSpec
+import org.bouncycastle.math.ec.custom.sec.SecP256K1FieldElement
 
 trait ECCurve[A] {
   protected val cName: String
 
-  val params = SECNamedCurves.getByName(cName)
+  lazy val params = ECNamedCurveTable.getParameterSpec(cName)
 
-  def curve = new ECDomainParameters(
-    params.getCurve,
-    params.getG,
-    params.getN,
-    params.getH
-  )
+  lazy val curveSpec: ECNamedCurveSpec = {
+
+    new ECNamedCurveSpec(
+      cName,
+      params.getCurve,
+      params.getG,
+      params.getN,
+      params.getH
+    )
+  }
+
+  val e = new SecP256K1FieldElement
 }

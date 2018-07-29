@@ -1,29 +1,15 @@
 package fp
 
-import java.security.{KeyPair, PrivateKey, PublicKey}
+import scodec.bits.ByteVector
 
-package object sig {
-  type SigPrivateKey[A] = SigPrivateKey.Repr[A]
+package object schnorr {
 
-  object SigPrivateKey {
-    type Repr[A]
+  case class Point(y: BigInt, x: BigInt)
 
-    @inline def apply[A](key: PrivateKey): SigPrivateKey[A] = key.asInstanceOf[SigPrivateKey[A]]
-    @inline def toJavaPrivateKey[A](key: SigPrivateKey[A]): PrivateKey = key.asInstanceOf[PrivateKey]
-  }
+  case class SigKeyPair(
+   privateKey: Point,
+   publicKey: Point
+  )
 
-  type SigPublicKey[A] = SigPublicKey.Repr[A]
-  object SigPublicKey {
-    type Repr[A]
-
-    @inline def apply[A](key: PublicKey): SigPublicKey[A] = key.asInstanceOf[SigPublicKey[A]]
-    @inline def toJavaPublicKey[A](key: SigPublicKey[A]): PublicKey  = key.asInstanceOf[PublicKey]
-  }
-
-  case class SigKeyPair[A](privateKey: SigPrivateKey[A], publicKey: SigPublicKey[A])
-
-  object SigKeyPair {
-    def fromKeyPair[A](keypair: KeyPair): SigKeyPair[A] =
-      SigKeyPair[A](SigPrivateKey[A](keypair.getPrivate), SigPublicKey[A](keypair.getPublic))
-  }
+  case class Signature[A](value: ByteVector)
 }
