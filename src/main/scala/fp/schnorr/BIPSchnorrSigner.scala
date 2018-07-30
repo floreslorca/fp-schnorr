@@ -29,7 +29,9 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
       Security.insertProviderAt(new BouncyCastleProvider(), 1)
       MessageDigest.getInstance("SHA-256")
     }
-    val bigInt = uint32.xmap[BigInt](BigInt.apply, _.toLong)
+    val bigInt = bytes(32).xmap[BigInt](s =>
+      BigInt(s.toArray), n => ByteVector(n.toByteArray)
+    )
 
     val point: Encoder[Point] = Encoder(p =>
       for {
@@ -81,16 +83,18 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
 
   def sign(
     unsigned: ByteVector,
-    secretKey: BigInt
-  ): F[Signature[A]] = for {
-    hash <- algebra.encodeBigInt(secretKey).flatMap(bytes => algebra.sha256(bytes ++ unsigned))
-    k1 <- algebra.getN.flatMap(n => algebra.decodeBigInt(hash))
-    r <- algebra.getG.flatMap(g => algebra.mult(g, k1))
-    e <- calcE(r, secretKey, unsigned)
-    k <- calcK(r, k1)
-    r0 <- algebra.encodeBigInt(r.getXCoord.toBigInteger)
-    r1 <- algebra.getN.map((k + (e * secretKey)) % _).flatMap(algebra.encodeBigInt)
-  } yield Signature[A](r0 ++ r1)
+    secretKey: ByteVector
+  ): F[Signature[A]] =
+    for {
+      skeyNum <- algebra.decodeBigInt(secretKey)
+      hash <- algebra.sha256(secretKey ++ unsigned)
+      k1 <- algebra.getN.flatMap(n => algebra.decodeBigInt(hash))
+      r <- algebra.getG.flatMap(g => algebra.mult(g, k1))
+      e <- calcE(r, skeyNum, unsigned)
+      k <- calcK(r, k1)
+      r0 <- algebra.encodeBigInt(r.getXCoord.toBigInteger)
+      r1 <- algebra.getN.map((k + (e * skeyNum)) % _).flatMap(algebra.encodeBigInt)
+    } yield Signature[A](r0 ++ r1)
 
   def verify(
     raw: ByteVector,

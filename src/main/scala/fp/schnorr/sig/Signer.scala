@@ -5,7 +5,7 @@ import scodec.bits.ByteVector
 trait Signer[F[_], A]{
   def sign(
     unsigned: ByteVector,
-    secretKey: BigInt
+    secretKey: ByteVector
   ): F[Signature[A]]
 
   def verify(
