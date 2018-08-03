@@ -9,7 +9,6 @@ import fp.schnorr.sig.{ECCurve, Signer}
 import fp.schnorr.sig.{Point, Signature}
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.bouncycastle.math.ec.ECPoint
 
 import org.slf4j.LoggerFactory
 
@@ -33,24 +32,47 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
       MessageDigest.getInstance("SHA-256")
     }
     val bigInt = bytes(32).xmap[BigInt](s =>
-      BigInt(s.toArray), n => ByteVector(n.toByteArray)
+      BigInt(1, s.toArray), n => ByteVector(n.toByteArray)
     )
 
     val point: Encoder[Point] = Encoder(p =>
       for {
-        y <- if((p.y & 1.toBigInt) === 1.toBigInt) Successful(hex"0x03") else Successful(hex"0x02")
         x <- bigInt.encode(p.x)
+        y <- if((p.y & 1.toBigInt) === 1.toBigInt) Successful(hex"03") else Successful(hex"02")
       } yield y.toBitVector ++ x
     )
 
-    def encode(p: Point): F[ByteVector] = F.delay(point.encode(p).require.toByteVector)
+    def encodePoint(p: Point): F[ByteVector] = F.delay(point.encode(p).require.toByteVector)
 
-    def onCurve(p: ByteVector): F[ECPoint] =
-      F.catchNonFatal(EC.params.getCurve.decodePoint(p.toArray))
+    def onCurve(p: Point): F[Boolean] =
+      F.catchNonFatal((p.y.modPow(2, fieldSize) - p.x.modPow(3, fieldSize)) % fieldSize === 7.toBigInt)
 
-    def sum(p1: ECPoint, p2: ECPoint): F[ECPoint] = F.delay(p1.add(p2))
+    def sum(p1: Option[Point], p2: Option[Point]): Option[Point] = (p1, p2) match {
+      case (None, p2) => p2
+      case (p1, None) => p1
+      case (Some(p1), Some(p2)) if (p1.x == p2.x && p1.y != p2.y) => None
+      case (Some(p1), Some(p2)) => {
+        val lam =
+          if (p1 == p2)
+            (3 * p1.x * p1.x * (p1.y * 2).modPow(fieldSize - 2, fieldSize)) % fieldSize
+          else
+            ((p2.y - p1.y) * (p2.x - p1.x).modPow(fieldSize - 2, fieldSize)) % fieldSize
+        val x3 = (lam * lam - p1.x - p2.x) % fieldSize
+        Some(Point(x = x3, y = (lam * (p1.x - x3) - p1.y) % fieldSize))
+      }
+    }
 
-    def mult(p: ECPoint, n: BigInt): F[ECPoint] = F.delay(p.multiply(n.bigInteger))
+    def mult(p: Point, n: BigInt): F[Point] = {
+      def go(i: Int, r: Option[Point], p: Option[Point]): Option[Point] = {
+        if (i == 256)
+          r
+        else if (((n >> i) & 1) === 1.toBigInt)
+          go(i + 1, sum(r, p), sum(p, p))
+        else
+          go(i + 1, r, sum(p, p))
+      }
+      F.catchNonFatal(go(0, None, Some(p)).getOrElse(throw new Exception("fail to multiplicate")))
+    }
 
     def sha256(bytes: ByteVector): F[ByteVector] =
       for {
@@ -58,16 +80,15 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
         h <- F.delay(d.digest(bytes.toArray))
       } yield ByteVector(h)
 
-    def getG = F.delay(EC.params.getG)
+    def getG = F.delay {
+      val g = EC.params.getG
+      Point(x = g.getXCoord.toBigInteger, y = g.getYCoord.toBigInteger)
+    }
+
 
     def getN = F.delay(BigInt(EC.curveSpec.getOrder))
 
-    def jacobi(n: BigInt) = F.delay {
-      val num = (fieldSize - 1) / 2
-      val e = n.modPow(num, fieldSize)
-      logger.info(s" jacobian = $e")
-      e
-    }
+    def jacobi(n: BigInt) = F.delay(n.modPow((fieldSize - 1) / 2, fieldSize))
 
     def decodeBigInt(b: ByteVector): F[BigInt] = F.delay(bigInt.decode(b.toBitVector).require.value)
 
@@ -75,19 +96,14 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
 
   }
 
-  private def toPoint(ec: ECPoint): F[Point] = F.delay(Point(ec.getYCoord.toBigInteger, ec.getXCoord.toBigInteger))
-
-  private def calcK(r: ECPoint, k1: BigInt) = for {
-    j <- algebra.jacobi(r.getYCoord.toBigInteger)
-    _ = logger.info(s" jacobian = $j")
+  private def calcK(r: Point, k1: BigInt) = for {
+    j <- algebra.jacobi(r.y)
     k <- algebra.getN.map(n => if (j =!= 1.toBigInt) n - k1 else k1)
   } yield k
 
-  private def calcE(r: ECPoint, sKey: BigInt, m: ByteVector) = for {
-    e0 <- F.delay(ByteVector(r.getXCoord.getEncoded))
-    e1 <- algebra.getG.flatMap(algebra.mult(_, sKey))
-            .flatMap(toPoint)
-            .flatMap(algebra.encode)
+  private def calcE(r: Point, sKey: BigInt, m: ByteVector) = for {
+    e0 <- algebra.encodeBigInt(r.x)
+    e1 <- algebra.getG.flatMap(algebra.mult(_, sKey)).flatMap(algebra.encodePoint)
     e <- algebra.sha256(e0 ++ e1 ++ m).flatMap(algebra.decodeBigInt)
   } yield e
 
@@ -100,16 +116,17 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
       _ = logger.info(s"secret = num: $skeyNum hex: ${secretKey.toHex}")
       hash <- algebra.sha256(secretKey ++ unsigned)
       k1 <- algebra.decodeBigInt(hash)
-      _ = logger.info(s"k1 = hex: $hash num: $k1")
+      _ = logger.info(s"k1 = hex: ${hash.toHex} num: $k1")
       r <- algebra.getG.flatMap(algebra.mult(_, k1))
-      _ = logger.info(s"Rx = hex: ${r.getXCoord} num: ${r.getXCoord.toBigInteger}")
+      _ = logger.info(s"R = x: ${r.x} y: ${r.y}")
       e <- calcE(r, skeyNum, unsigned)
       k <- calcK(r, k1)
       _ = logger.info(s"e = $e ; k = $k")
-      r0 <- F.delay(ByteVector(r.getXCoord.getEncoded))
+      r0 <- algebra.encodeBigInt(r.x)
       r1 <- algebra.getN.map((k + (e * skeyNum)) % _).flatMap(algebra.encodeBigInt)
-      _ = println(s"r0 = hex: ${r0.toHex} r1 = hex: ${r1.toHex}")
-    } yield Signature[A](r0 ++ r1)
+      sig = r0 ++ r1
+      _ = logger.info(s"signature: ${sig.toHex}")
+    } yield Signature[A](sig)
 
   def verify(
     raw: ByteVector,
