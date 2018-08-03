@@ -23,6 +23,7 @@ licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 libraryDependencies ++= Seq(
   "org.bouncycastle" % "bcprov-jdk15on" % "1.60",
+  "org.slf4j"        %  "slf4j-simple"  % "1.7.25",
   "org.typelevel"    %% "spire"         % "0.14.1",
   "org.scodec"       %% "scodec-core"   % "1.10.3",
   "org.typelevel"    %% "cats-core"     % "1.0.1",

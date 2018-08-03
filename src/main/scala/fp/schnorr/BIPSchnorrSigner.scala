@@ -5,22 +5,25 @@ import java.security.{MessageDigest, Security}
 import cats.effect.Sync
 import cats.syntax.all._
 
-import fp.schnorr.sig.{Signer, ECCurve}
-import fp.schnorr.sig.{Signature, Point}
+import fp.schnorr.sig.{ECCurve, Signer}
+import fp.schnorr.sig.{Point, Signature}
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.math.ec.ECPoint
+
+import org.slf4j.LoggerFactory
 
 import scodec.Attempt.Successful
 import scodec.Encoder
 import scodec.codecs._
 import scodec.bits._
 
-import spire.math._
 import spire.implicits._
 
 class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
   extends Signer[F,A] {
+
+  val logger = LoggerFactory.getLogger("logger")
 
   object algebra {
     private val fieldSize = BigInt("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", 16)
@@ -59,7 +62,12 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
 
     def getN = F.delay(BigInt(EC.curveSpec.getOrder))
 
-    def jacobi(n: BigInt) = F.delay(pow(n, (fieldSize - 1) / 2).mod(fieldSize))
+    def jacobi(n: BigInt) = F.delay {
+      val num = (fieldSize - 1) / 2
+      val e = n.modPow(num, fieldSize)
+      logger.info(s" jacobian = $e")
+      e
+    }
 
     def decodeBigInt(b: ByteVector): F[BigInt] = F.delay(bigInt.decode(b.toBitVector).require.value)
 
@@ -71,13 +79,15 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
 
   private def calcK(r: ECPoint, k1: BigInt) = for {
     j <- algebra.jacobi(r.getYCoord.toBigInteger)
+    _ = logger.info(s" jacobian = $j")
     k <- algebra.getN.map(n => if (j =!= 1.toBigInt) n - k1 else k1)
   } yield k
 
   private def calcE(r: ECPoint, sKey: BigInt, m: ByteVector) = for {
-    g <- algebra.getG
-    e0 <- algebra.encodeBigInt(r.getXCoord.toBigInteger)
-    e1 <- algebra.mult(g, sKey).flatMap(toPoint).flatMap(algebra.encode)
+    e0 <- F.delay(ByteVector(r.getXCoord.getEncoded))
+    e1 <- algebra.getG.flatMap(algebra.mult(_, sKey))
+            .flatMap(toPoint)
+            .flatMap(algebra.encode)
     e <- algebra.sha256(e0 ++ e1 ++ m).flatMap(algebra.decodeBigInt)
   } yield e
 
@@ -87,13 +97,18 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
   ): F[Signature[A]] =
     for {
       skeyNum <- algebra.decodeBigInt(secretKey)
+      _ = logger.info(s"secret = num: $skeyNum hex: ${secretKey.toHex}")
       hash <- algebra.sha256(secretKey ++ unsigned)
-      k1 <- algebra.getN.flatMap(n => algebra.decodeBigInt(hash))
-      r <- algebra.getG.flatMap(g => algebra.mult(g, k1))
+      k1 <- algebra.decodeBigInt(hash)
+      _ = logger.info(s"k1 = hex: $hash num: $k1")
+      r <- algebra.getG.flatMap(algebra.mult(_, k1))
+      _ = logger.info(s"Rx = hex: ${r.getXCoord} num: ${r.getXCoord.toBigInteger}")
       e <- calcE(r, skeyNum, unsigned)
       k <- calcK(r, k1)
-      r0 <- algebra.encodeBigInt(r.getXCoord.toBigInteger)
+      _ = logger.info(s"e = $e ; k = $k")
+      r0 <- F.delay(ByteVector(r.getXCoord.getEncoded))
       r1 <- algebra.getN.map((k + (e * skeyNum)) % _).flatMap(algebra.encodeBigInt)
+      _ = println(s"r0 = hex: ${r0.toHex} r1 = hex: ${r1.toHex}")
     } yield Signature[A](r0 ++ r1)
 
   def verify(
