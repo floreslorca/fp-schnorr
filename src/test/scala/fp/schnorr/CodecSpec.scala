@@ -1,7 +1,7 @@
 package fp.schnorr
 
 class CodecSpec extends TestSuite {
-/*
+
   "Roundtrip" should {
     "return valid 1" in {
       val skey = testVec1.privKey
@@ -33,5 +33,5 @@ class CodecSpec extends TestSuite {
         ).unsafeRunSync()
     }
   }
-  */
+
 }

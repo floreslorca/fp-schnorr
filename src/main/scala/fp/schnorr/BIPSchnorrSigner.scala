@@ -64,24 +64,13 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
           else
             ((p2.y - p1.y) * (p2.x - p1.x).modPow(fieldSize - 2, fieldSize)) % fieldSize
         val x3 = (lam * lam - p1.x - p2.x) % fieldSize
-        val r = lam * (p1.x - x3) - p1.y
-        if(x3 == BigInt("89565891926547004231252920425935692360644145829622209833684329913297188986597")) {
-          println(s"lam: $lam")
-          println(s"x: ${p1.x}")
-          println(s"y: ${p1.y}")
-          println(s"x3: $x3")
-          println(s"x - x3 ${p1.x - x3}")
-          println(s"lam*r ${lam * (p1.x - x3)}")
-          println(s"lam*r-y $r")
-          println(s"r.y ${r % fieldSize}")
-        }
-        Some(Point(x = x3, y = r % fieldSize))
+
+        Some(Point(x = x3, y = (lam * (p1.x - x3) - p1.y) % fieldSize))
       }
     }
 
     def mult(p: Point, n: BigInt): F[Point] = {
       def go(i: Int, r: Option[Point], p: Option[Point]): Option[Point] = {
-        println(s"it $i n ${(n >> i) & 1} p: $p")
         if (i == 256)
           r
         else if (((n >> i) & 1) === 1.toBigInt)
