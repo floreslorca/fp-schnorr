@@ -2,14 +2,12 @@ package fp.schnorr
 
 import cats.effect.IO
 import org.scalatest.{Matchers, WordSpec}
+import scodec.bits.ByteVector
 import scodec.bits._
-//import cats.implicits._
 
-class TestSpec
+trait TestSuite
   extends WordSpec
   with Matchers {
-
-  val signerSync = new BIPSchnorrSigner[IO, BIPSchnorr]
 
   case class TestVector(
     privKey: ByteVector,
@@ -17,6 +15,8 @@ class TestSpec
     msg: ByteVector,
     sig: ByteVector
   )
+
+  val signerSync = new BIPSchnorrSigner[IO, BIPSchnorr]
 
   val testVec1 = TestVector(
     privKey = hex"0000000000000000000000000000000000000000000000000000000000000001",
@@ -39,30 +39,4 @@ class TestSpec
 
   val tests = List(testVec1, testVec2, testVec3)
 
-  "Signing" should {
-    "return valid 1" in {
-      BIPSchnorr.sign[IO](testVec1.msg, testVec1.privKey).map(_.value shouldEqual testVec1.sig)
-        .unsafeRunSync()
-    }
-    "return valid 2" in {
-      BIPSchnorr.sign[IO](testVec2.msg, testVec2.privKey).map(_.value shouldEqual testVec2.sig)
-        .unsafeRunSync()
-    }
-    "return valid 3" in {
-      BIPSchnorr.sign[IO](testVec3.msg, testVec3.privKey).map(_.value shouldEqual testVec3.sig)
-        .unsafeRunSync()
-    }
-  }
-
-  "Encode bigint" should {
-    "return valid" in {
-      val skey = hex"B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF"
-      (
-        for {
-          skNum <- signerSync.algebra.decodeBigInt(skey)
-          skDec <- signerSync.algebra.encodeBigInt(skNum)
-        } yield skDec shouldEqual skey
-        ).unsafeRunSync()
-    }
-  }
 }

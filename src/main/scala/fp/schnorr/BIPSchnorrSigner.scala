@@ -32,7 +32,13 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
       MessageDigest.getInstance("SHA-256")
     }
     val bigInt = bytes(32).xmap[BigInt](s =>
-      BigInt(1, s.toArray), n => ByteVector(n.toByteArray)
+      BigInt(1, s.toArray),
+      { n =>
+        val bytes = ByteVector(n.toByteArray)
+        if (bytes.length <= 32) {
+          ByteVector.fill(32 - bytes.length)(0) ++ bytes
+        } else bytes.drop(1)
+      }
     )
 
     val point: Encoder[Point] = Encoder(p =>
@@ -58,12 +64,24 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
           else
             ((p2.y - p1.y) * (p2.x - p1.x).modPow(fieldSize - 2, fieldSize)) % fieldSize
         val x3 = (lam * lam - p1.x - p2.x) % fieldSize
-        Some(Point(x = x3, y = (lam * (p1.x - x3) - p1.y) % fieldSize))
+        val r = lam * (p1.x - x3) - p1.y
+        if(x3 == BigInt("89565891926547004231252920425935692360644145829622209833684329913297188986597")) {
+          println(s"lam: $lam")
+          println(s"x: ${p1.x}")
+          println(s"y: ${p1.y}")
+          println(s"x3: $x3")
+          println(s"x - x3 ${p1.x - x3}")
+          println(s"lam*r ${lam * (p1.x - x3)}")
+          println(s"lam*r-y $r")
+          println(s"r.y ${r % fieldSize}")
+        }
+        Some(Point(x = x3, y = r % fieldSize))
       }
     }
 
     def mult(p: Point, n: BigInt): F[Point] = {
       def go(i: Int, r: Option[Point], p: Option[Point]): Option[Point] = {
+        println(s"it $i n ${(n >> i) & 1} p: $p")
         if (i == 256)
           r
         else if (((n >> i) & 1) === 1.toBigInt)
@@ -103,8 +121,15 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
 
   private def calcE(r: Point, sKey: BigInt, m: ByteVector) = for {
     e0 <- algebra.encodeBigInt(r.x)
-    e1 <- algebra.getG.flatMap(algebra.mult(_, sKey)).flatMap(algebra.encodePoint)
-    e <- algebra.sha256(e0 ++ e1 ++ m).flatMap(algebra.decodeBigInt)
+    _ = logger.info(s"e0 = hex: ${e0.toHex} num: ${r.x}")
+    mul <- algebra.getG.flatMap(algebra.mult(_, sKey))
+    _ = logger.info(s"G*skey = $mul")
+    e1 <- algebra.encodePoint(mul)
+    _ = logger.info(s"e1 = hex: ${e1.toHex} num: ${mul.x}")
+    _ = logger.info(s"e2 = hex: ${m.toHex}")
+    eh <- algebra.sha256(e0 ++ e1 ++ m)
+    _ = logger.info(s"eh = ${eh.toHex}")
+    e <- algebra.decodeBigInt(eh)
   } yield e
 
   def sign(
