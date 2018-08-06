@@ -51,7 +51,7 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
     def encodePoint(p: Point): F[ByteVector] = F.delay(point.encode(p).require.toByteVector)
 
     def onCurve(p: Point): F[Boolean] =
-      F.catchNonFatal((p.y.modPow(2, fieldSize) - p.x.modPow(3, fieldSize)) % fieldSize === 7.toBigInt)
+      F.catchNonFatal((p.y.modPow(2, fieldSize) - p.x.modPow(3, fieldSize)).mod(fieldSize) === 7.toBigInt)
 
     def sum(p1: Option[Point], p2: Option[Point]): Option[Point] = (p1, p2) match {
       case (None, p2) => p2
@@ -60,12 +60,12 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
       case (Some(p1), Some(p2)) => {
         val lam =
           if (p1 == p2)
-            (3 * p1.x * p1.x * (p1.y * 2).modPow(fieldSize - 2, fieldSize)) % fieldSize
+            (3 * p1.x * p1.x * (p1.y * 2).modPow(fieldSize - 2, fieldSize)).mod(fieldSize)
           else
-            ((p2.y - p1.y) * (p2.x - p1.x).modPow(fieldSize - 2, fieldSize)) % fieldSize
-        val x3 = (lam * lam - p1.x - p2.x) % fieldSize
+            ((p2.y - p1.y) * (p2.x - p1.x).modPow(fieldSize - 2, fieldSize)).mod(fieldSize)
+        val x3 = (lam * lam - p1.x - p2.x).mod(fieldSize)
 
-        Some(Point(x = x3, y = (lam * (p1.x - x3) - p1.y) % fieldSize))
+        Some(Point(x = x3, y = (lam * (p1.x - x3) - p1.y).mod(fieldSize)))
       }
     }
 
@@ -137,7 +137,7 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], EC: ECCurve[A])
       k <- calcK(r, k1)
       _ = logger.info(s"e = $e ; k = $k")
       r0 <- algebra.encodeBigInt(r.x)
-      r1 <- algebra.getN.map((k + (e * skeyNum)) % _).flatMap(algebra.encodeBigInt)
+      r1 <- algebra.getN.map((k + (e * skeyNum)).mod _).flatMap(algebra.encodeBigInt)
       sig = r0 ++ r1
       _ = logger.info(s"signature: ${sig.toHex}")
     } yield Signature[A](sig)
