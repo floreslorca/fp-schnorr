@@ -1,4 +1,8 @@
 # fp-schnorr
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/floreslorca/fp-schnorr/master/LICENSE)
+[![Build Status](https://travis-ci.org/floreslorca/fp-schnorr.svg?branch=master)](https://travis-ci.org/floreslorca/fp-schnorr) 
+[![Coverage Status](https://coveralls.io/repos/github/floreslorca/fp-schnorr/badge.svg?branch=master)](https://coveralls.io/github/floreslorca/fp-schnorr?branch=master)
+
 BIP schnorr implementation in FP scala subset
 
 https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki
