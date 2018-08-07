@@ -1,28 +1,38 @@
 package fp.schnorr
 
 import cats.effect.IO
+import cats.implicits._
+import org.scalatest.Assertion
+import scodec.bits._
 
 class VerifySpec extends TestSuite {
 
+  val testVec4 = TestVector(
+    ByteVector.empty,
+    hex"03DEFDEA4CDB677750A420FEE807EACF21EB9898AE79B9768766E4FAA04A2D4A34",
+    hex"4DF3C3F68FCC83B27E9D42C90431A72499F17875C81A599B566C9889B9696703",
+    hex"00000000000000000000003B78CE563F89A0ED9414F5AA28AD0D96D6795F9C6302A8DC32E64E86A333F20EF56EAC9BA30B7246D6D25E22ADB8C6BE1AEB08D49D"
+  )
+
   "Verifying" should {
 
-    "return valid 1" in {
-      BIPSchnorr.verify[IO](testVec1.msg, testVec1.sig, testVec1.pubKey)
-        .map(_.shouldBe(true))
-//        .unsafeRunSync()
-    }
-    /*
-    "return valid 2" in {
-      BIPSchnorr.verify[IO](testVec2.msg, testVec2.sig, testVec2.pubKey)
-        .map(_.shouldBe(true))
+    "valid verify 1" in {
+      (validTests :+ testVec4).map(vec =>
+        BIPSchnorr.verify[IO](vec.msg, vec.sig, vec.pubKey)
+          .map(_.shouldBe(true))
+      )
+        .sequence[IO, Assertion]
         .unsafeRunSync()
     }
 
-    "return valid 3" in {
-      BIPSchnorr.verify[IO](testVec3.msg, testVec3.sig, testVec3.pubKey)
-        .map(_.shouldBe(true))
+    "invalid verify 1" in {
+      invalidTests.map(vec =>
+        BIPSchnorr.verify[IO](vec.msg, vec.sig, vec.pubKey)
+          .map(_.shouldBe(false))
+      )
+        .sequence[IO, Assertion]
+        .attempt
         .unsafeRunSync()
     }
-    */
   }
 }

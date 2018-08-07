@@ -1,36 +1,19 @@
 package fp.schnorr
 
+import cats.implicits._
+
 class CodecSpec extends TestSuite {
 
   "Roundtrip" should {
     "return valid 1" in {
-      val skey = testVec1.privKey
-      (
+      validTests.map(vec =>
         for {
-          skNum <- curveSync.decodeBigInt(skey)
+          skNum <- curveSync.decodeBigInt(vec.privKey)
           skDec <- curveSync.encodeBigInt(skNum)
-        } yield skDec shouldEqual skey
-        ).unsafeRunSync()
-    }
-
-    "return valid 2" in {
-      val skey = testVec2.privKey
-      (
-        for {
-          skNum <- curveSync.decodeBigInt(skey)
-          skDec <- curveSync.encodeBigInt(skNum)
-        } yield skDec shouldEqual skey
-        ).unsafeRunSync()
-    }
-
-    "return valid 3" in {
-      val skey = testVec3.privKey
-      (
-        for {
-          skNum <- curveSync.decodeBigInt(skey)
-          skDec <- curveSync.encodeBigInt(skNum)
-        } yield skDec shouldEqual skey
-        ).unsafeRunSync()
+        } yield skDec shouldEqual vec.privKey
+      )
+        .sequence
+        .unsafeRunSync()
     }
   }
 
