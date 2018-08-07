@@ -5,7 +5,7 @@ https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki
 
 This is the first implementation using the JVM and in Functional Programming. This software is for educational purposes only at the moment. Eventually it will track the path followed by the standard and be released shortly after the spec is set
 
-####Usage
+### Usage ###
 
 Example with cats IO monad
 ```
@@ -26,7 +26,7 @@ Example with cats IO monad
       
 ```
 
-####Todo
+### Todo ###
 
 1. Add keygen
 2. batch verifycation
