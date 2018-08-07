@@ -3,7 +3,6 @@ package fp.schnorr
 import cats.effect.IO
 
 class SignSpec extends TestSuite {
-
   "Signing" should {
 
     "return valid 1" in {
@@ -11,6 +10,7 @@ class SignSpec extends TestSuite {
         .map(_.value shouldEqual testVec1.sig)
         .unsafeRunSync()
     }
+
     "return valid 2" in {
       BIPSchnorr.sign[IO](testVec2.msg, testVec2.privKey)
         .map(_.value shouldEqual testVec2.sig)
@@ -22,5 +22,6 @@ class SignSpec extends TestSuite {
         .map(_.value shouldEqual testVec3.sig)
         .unsafeRunSync()
     }
+
   }
 }

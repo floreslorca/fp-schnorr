@@ -1,5 +1,6 @@
 package fp.schnorr.sig
 
+import fp.schnorr.sig.impl.Signer
 import scodec.bits.ByteVector
 
 trait SigApi[A] {
@@ -11,8 +12,8 @@ trait SigApi[A] {
 
   final def verify[F[_]](
     raw: ByteVector,
-    signature: Signature[A],
-    publicKey: Point
+    signature: ByteVector,
+    publicKey: ByteVector
   )(implicit S: Signer[F, A]): F[Boolean] =
     S.verify(raw, signature, publicKey)
 }

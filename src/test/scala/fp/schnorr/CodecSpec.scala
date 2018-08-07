@@ -7,8 +7,8 @@ class CodecSpec extends TestSuite {
       val skey = testVec1.privKey
       (
         for {
-          skNum <- signerSync.algebra.decodeBigInt(skey)
-          skDec <- signerSync.algebra.encodeBigInt(skNum)
+          skNum <- curveSync.decodeBigInt(skey)
+          skDec <- curveSync.encodeBigInt(skNum)
         } yield skDec shouldEqual skey
         ).unsafeRunSync()
     }
@@ -17,8 +17,8 @@ class CodecSpec extends TestSuite {
       val skey = testVec2.privKey
       (
         for {
-          skNum <- signerSync.algebra.decodeBigInt(skey)
-          skDec <- signerSync.algebra.encodeBigInt(skNum)
+          skNum <- curveSync.decodeBigInt(skey)
+          skDec <- curveSync.encodeBigInt(skNum)
         } yield skDec shouldEqual skey
         ).unsafeRunSync()
     }
@@ -27,8 +27,8 @@ class CodecSpec extends TestSuite {
       val skey = testVec3.privKey
       (
         for {
-          skNum <- signerSync.algebra.decodeBigInt(skey)
-          skDec <- signerSync.algebra.encodeBigInt(skNum)
+          skNum <- curveSync.decodeBigInt(skey)
+          skDec <- curveSync.encodeBigInt(skNum)
         } yield skDec shouldEqual skey
         ).unsafeRunSync()
     }

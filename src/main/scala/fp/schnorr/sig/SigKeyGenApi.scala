@@ -1,5 +1,6 @@
 package fp.schnorr.sig
 
+import fp.schnorr.sig.impl.SigKeyGen
 import scodec.bits.ByteVector
 
 trait SigKeyGenApi[A] {

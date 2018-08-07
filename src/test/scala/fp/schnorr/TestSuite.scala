@@ -17,6 +17,7 @@ trait TestSuite
   )
 
   val signerSync = new BIPSchnorrSigner[IO, BIPSchnorr]
+  val curveSync = new BIPSchnorrAlgebra[IO, BIPSchnorr]
 
   val testVec1 = TestVector(
     privKey = hex"0000000000000000000000000000000000000000000000000000000000000001",

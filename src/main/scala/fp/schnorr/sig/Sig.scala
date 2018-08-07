@@ -1,8 +1,7 @@
 package fp.schnorr.sig
 
-abstract class Sig[A](curveName: String, outLen: Int)
-  extends ECCurve[A]
+abstract class Sig[A]
   //with SigKeyGenApi[A]
-  with SigApi[A] {
-  override protected val cName = curveName
+  extends SigApi[A] {
+
 }

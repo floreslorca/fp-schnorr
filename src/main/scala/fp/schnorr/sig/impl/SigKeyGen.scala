@@ -1,5 +1,6 @@
-package fp.schnorr.sig
+package fp.schnorr.sig.impl
 
+import fp.schnorr.sig.{Point, SigKeyPair}
 import scodec.bits.ByteVector
 
 abstract class SigKeyGen[F[_]] {
