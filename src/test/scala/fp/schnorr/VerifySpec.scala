@@ -15,7 +15,6 @@ class VerifySpec extends TestSuite {
   )
 
   "Verifying" should {
-
     "valid verify 1" in {
       (validTests :+ testVec4).map(vec =>
         BIPSchnorr.verify[IO](vec.msg, vec.sig, vec.pubKey)
