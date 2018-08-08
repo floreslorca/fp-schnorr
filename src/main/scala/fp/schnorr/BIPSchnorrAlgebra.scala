@@ -88,11 +88,11 @@ class BIPSchnorrAlgebra[F[_], A](implicit F: Sync[F]) extends PointAlgebra[F, A]
     }
   }
 
-  def getG = F.delay(generator)
+  def getG = F.pure(generator)
 
-  def getP = F.delay(fieldSize)
+  def getP = F.pure(fieldSize)
 
-  def getN = F.delay(curveOrder)
+  def getN = F.pure(curveOrder)
 
   def jacobi(n: BigInt) = F.delay(n.modPow((fieldSize - 1) / 2, fieldSize))
 

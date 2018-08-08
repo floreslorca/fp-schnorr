@@ -76,7 +76,7 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], algebra: BIPSchnorrAlgebra[
               gs <- algebra.mul(g, s)
               pne <- algebra.mul(pk, n - e)
               bigR <- algebra.add(gs.some, pne.some)
-              ver <- bigR.fold(F.delay(false)){ bigR =>
+              ver <- bigR.fold(F.pure(false)){ bigR =>
                 algebra.jacobi(bigR.y).map(jac => if(jac != 1.toBigInt || bigR.x != r) false else true)
               }
           } yield ver
@@ -86,7 +86,7 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], algebra: BIPSchnorrAlgebra[
       for {
         pk <- algebra.decodePoint(publicKey)
         on <- algebra.onCurve(pk)
-        ans <- if(on) verifyImpl(pk) else F.delay(false)
+        ans <- if(on) verifyImpl(pk) else F.pure(false)
       } yield ans
   }
 }
