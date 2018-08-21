@@ -68,7 +68,7 @@ class BIPSchnorrSigner[F[_], A](implicit F: Sync[F], algebra: BIPSchnorrAlgebra[
         p <- algebra.getP
         ans <-
           if(r >= p || s >= n) {
-            F.delay(false)
+            F.pure(false)
           } else {
             for {
               g <- algebra.getG
