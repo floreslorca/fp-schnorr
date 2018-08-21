@@ -1,14 +1,14 @@
 package fp.schnorr.sig.impl
 
-import fp.schnorr.sig.{Point, SigKeyPair}
+import fp.schnorr.sig.SigKeyPair
 import scodec.bits.ByteVector
 
-abstract class SigKeyGen[F[_]] {
+abstract class SigKeyGen[F[_], A] {
 
-  def generateKeyPair: F[SigKeyPair]
+  def generateKeyPair: F[SigKeyPair[A]]
 
-  def buildPrivateKey(rawPk: ByteVector): F[Point]
+  def buildPrivateKey(rawPk: ByteVector): F[ByteVector]
 
-  def buildPublicKey(rawPk: ByteVector): F[Point]
+  def buildPublicKey(rawPk: ByteVector): F[ByteVector]
 
 }

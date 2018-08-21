@@ -22,8 +22,9 @@ Example with cats IO monad
 
   val result: IO[(Signature[BIPSchnorr], Boolean]] = 
       for {
-        signed <- BIPSchnorr.sign[IO](msg, privKey)
-        verified <- BIPSchnorr.verify[IO](msg, signed, pubKey)
+        kp <- BIPSchnorr.generateKeyPair[IO]
+        signed <- BIPSchnorr.sign[IO](msg, kp.privKey)
+        verified <- BIPSchnorr.verify[IO](msg, signed, kp.pubKey)
       } yield (signed, verified)
       
   result.unsafeRunAsync()
@@ -32,7 +33,6 @@ Example with cats IO monad
 
 ### Todo ###
 
-1. Add keygen
-2. batch verifycation
+1. batch verification
 3. Increase type safety
 4. Improve error reporting
