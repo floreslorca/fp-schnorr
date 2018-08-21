@@ -16,10 +16,6 @@ Example with cats IO monad
   import cats.effect.IO
   import fp.schnorr.BIPSchnorr
   
-  val privKey = hex"C90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B14E5C7",
-  val pubKey = hex"03FAC2114C2FBB091527EB7C64ECB11F8021CB45E8E7809D3C0938E4B8C0E5F84B",
-  val msg = hex"5E2D58D8B3BCDF1ABADEC7829054F90DDA9805AAB56C77333024B9D0A508B75C",
-
   val result: IO[(Signature[BIPSchnorr], Boolean]] = 
       for {
         kp <- BIPSchnorr.generateKeyPair[IO]
