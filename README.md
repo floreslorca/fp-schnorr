@@ -27,7 +27,7 @@ Example with cats IO monad
         verified <- BIPSchnorr.verify[IO](msg, signed, kp.pubKey)
       } yield (signed, verified)
       
-  result.unsafeRunAsync()
+  result.unsafeRunAsync() // executes and returns the pair value
       
 ```
 
