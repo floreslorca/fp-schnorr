@@ -17,7 +17,10 @@ class BIPSchnorrKeyGen[F[_], A](implicit F: Sync[F], algebra: BIPSchnorrAlgebra[
     pubk <- buildPublicKey(priv)
   } yield SigKeyPair(priv, pubk)
 
-  def buildPrivateKey(rawPk: ByteVector): F[ByteVector] = F.pure(rawPk)
+  def buildPrivateKey(rawPk: ByteVector): F[ByteVector] = F.catchNonFatal{
+    assert(rawPk.length == 32)
+    rawPk
+  }
 
   def buildPublicKey(rawPk: ByteVector): F[ByteVector] = for {
     num <- algebra.decodeBigInt(rawPk)

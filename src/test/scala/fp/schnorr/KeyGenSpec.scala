@@ -2,13 +2,13 @@ package fp.schnorr
 
 import cats.effect.IO
 import cats.implicits._
-
 import org.scalatest.Assertion
+import scodec.bits.ByteVector
 
 class KeyGenSpec extends TestSuite {
 
   "Generate Keypair" should {
-    "valid generation" in {
+    "build public key from secret" in {
       validTests.map(vec =>
         BIPSchnorr.buildPublicKey[IO](vec.privKey)
           .map(_.shouldBe(vec.pubKey))
@@ -16,8 +16,25 @@ class KeyGenSpec extends TestSuite {
         .sequence[IO, Assertion]
         .unsafeRunSync()
     }
-    "valid generate 1" in {
-      BIPSchnorr.buildPublicKey[IO](testVec2.privKey).map(_.shouldBe(testVec2.pubKey)).unsafeRunSync()
+
+    "generate random keypair" in {
+      BIPSchnorr.generateKeyPair[IO].map(_.privateKey.length shouldBe 32 ).unsafeRunSync()
+    }
+
+    "build secret key from raw bytevector" in {
+      validTests.map(vec =>
+        BIPSchnorr.buildPrivateKey[IO](vec.privKey)
+          .map(_.shouldBe(vec.privKey))
+      )
+        .sequence[IO, Assertion]
+        .unsafeRunSync()
+    }
+
+
+    "attempt to build invalid secret key from raw bytevector" in {
+      assertThrows[AssertionError](
+        BIPSchnorr.buildPrivateKey[IO](ByteVector.fill(2)(1)).unsafeRunSync()
+      )
     }
   }
 }
