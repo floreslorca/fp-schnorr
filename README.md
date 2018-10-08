@@ -32,4 +32,3 @@ Example with cats IO monad
 1. batch verification
 3. Increase type safety
 4. Improve error reporting
-5. Base58 Encoding
