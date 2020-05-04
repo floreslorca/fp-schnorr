@@ -16,7 +16,7 @@ Example with cats IO monad
   import cats.effect.IO
   import fp.schnorr.BIPSchnorr
   
-  val result: IO[(Signature[BIPSchnorr], Boolean]] = 
+  val result: IO[(Signature[BIPSchnorr], Boolean)] = 
       for {
         kp <- BIPSchnorr.generateKeyPair[IO]
         signed <- BIPSchnorr.sign[IO](msg, kp.privKey)
