@@ -4,28 +4,36 @@ import java.security.SecureRandom
 
 import cats.effect.Sync
 import cats.syntax.all._
+
 import fp.schnorr.sig.SigKeyPair
 import fp.schnorr.sig.impl.SigKeyGen
 
 import scodec.bits.ByteVector
 
-class BIPSchnorrKeyGen[F[_], A](implicit F: Sync[F], algebra: BIPSchnorrAlgebra[F, A]) extends SigKeyGen[F, A] {
-  def generateKeyPair: F[SigKeyPair[A]] =  for {
-    numr <- F.pure(BigInt(256, new SecureRandom()))
-    enum <- algebra.encodeBigInt(numr)
-    priv <- buildPrivateKey(enum)
-    pubk <- buildPublicKey(priv)
-  } yield SigKeyPair(priv, pubk)
+class BIPSchnorrKeyGen[F[_], A](implicit F: Sync[F], algebra: BIPSchnorrAlgebra) extends SigKeyGen[F, A] {
 
-  def buildPrivateKey(rawPk: ByteVector): F[ByteVector] = F.catchNonFatal{
+  def generateKeyPair: F[SigKeyPair[A]] = {
+    val numr = BigInt(256, new SecureRandom())
+    val enum = algebra.encodeBigInt(numr)
+
+    for {
+      priv <- buildPrivateKey(enum)
+      pubk <- buildPublicKey(priv)
+    } yield SigKeyPair(priv, pubk)
+  }
+
+  def genPrivKey: F[ByteVector] = generateKeyPair.map(_.privateKey)
+
+  def buildPrivateKey(rawPk: ByteVector): F[ByteVector] = F.catchNonFatal {
     assert(rawPk.length == 32)
     rawPk
   }
 
-  def buildPublicKey(rawPk: ByteVector): F[ByteVector] = for {
-    num <- algebra.decodeBigInt(rawPk)
-    gen <- algebra.getG
-    mul <- algebra.mul(gen, num)
-    b <- algebra.encodePoint(mul)
-  } yield b
+  def buildPublicKey(rawPk: ByteVector): F[ByteVector] = {
+    val num = algebra.decodeBigInt(rawPk)
+    val gen = algebra.getG
+    val mul = algebra.mul(gen, num)
+    val b   = algebra.encodePoint(mul)
+    F.delay(b)
+  }
 }

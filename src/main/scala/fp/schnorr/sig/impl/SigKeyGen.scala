@@ -11,4 +11,6 @@ abstract class SigKeyGen[F[_], A] {
 
   def buildPublicKey(rawPk: ByteVector): F[ByteVector]
 
+  def genPrivKey: F[ByteVector]
+
 }

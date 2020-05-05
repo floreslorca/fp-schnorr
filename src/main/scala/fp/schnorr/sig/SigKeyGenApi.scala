@@ -17,4 +17,8 @@ trait SigKeyGenApi[A] {
     implicit S: SigKeyGen[F, A]
   ): F[ByteVector] = S.buildPublicKey(rawPubkey)
 
+  final def genPrivateKey[F[_]](
+    implicit S: SigKeyGen[F, A]
+  ): F[ByteVector] = S.genPrivKey
+
 }
